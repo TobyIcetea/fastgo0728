@@ -14,3 +14,10 @@ mysql:
   max-open-connections: 100
   # 空闲连接最大存活时间，默认 10s
   max-connections-life-time: 10s
+
+
+# 日志相关配置
+log:
+  format: json
+  level: info
+  output: stdout
