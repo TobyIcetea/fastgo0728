@@ -47,7 +47,7 @@ func NewFastGoCommand() *cobra.Command {
 	return cmd
 }
 
-// run 是住运行逻辑，负责初始化日志、解析配置、校验选项并启动服务器。
+// run 是主运行逻辑，负责初始化日志、解析配置、校验选项并启动服务器。
 func run(opts *options.ServerOptions) error {
 	// 如果传入 --version，则打印版本信息并退出
 	version.PrintAndExitIfRequested()
