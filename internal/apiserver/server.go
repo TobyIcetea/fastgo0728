@@ -1,9 +1,12 @@
 package apiserver
 
 import (
+	"encoding/json"
 	"fmt"
+	"time"
 
 	genericoptions "github.com/TobyIcetea/fastgo/pkg/options"
+	"github.com/spf13/viper"
 )
 
 // Config 配置结构体，用于存储应用相关的配置
@@ -24,7 +27,11 @@ func (cfg *Config) NewServer() (*Server, error) {
 
 // Run 运行应用
 func (s *Server) Run() error {
-	fmt.Printf("Read MySQL host from config: %s\n", s.cfg.MySQLOptions.Addr)
+	fmt.Printf("Read MySQL host from Viper: %s\n\n", viper.GetString("mysql.host"))
 
-	select {}
+	jsonData, _ := json.MarshalIndent(s.cfg, "", "  ")
+	fmt.Println(string(jsonData))
+
+	time.Sleep(100 * time.Second)
+	return nil
 }
