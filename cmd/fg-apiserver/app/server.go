@@ -66,7 +66,7 @@ func run(opts *options.ServerOptions) error {
 	}
 
 	// 获取应用配置
-	// 将命令行选项和应用配置分开，可以更加灵活的处理 2 中不同类型的配置
+	// 将命令行选项和应用配置分开，可以更加灵活的处理 2 种不同类型的配置
 	cfg, err := opts.Config()
 	if err != nil {
 		return err
