@@ -2,7 +2,8 @@ package model
 
 import (
 	"github.com/TobyIcetea/fastgo/internal/pkg/rid"
-	"github.com/onexstack/onexstack/pkg/authn"
+	"github.com/TobyIcetea/fastgo/pkg/auth"
+
 	"gorm.io/gorm"
 )
 
@@ -17,7 +18,7 @@ func (post *Post) AfterCreate(tx *gorm.DB) error {
 func (m *User) BeforeCreate(tx *gorm.DB) error {
 	// Encrypt the user password.
 	var err error
-	m.Password, err = authn.Encrypt(m.Password)
+	m.Password, err = auth.Encrypt(m.Password)
 	if err != nil {
 		return err
 	}
