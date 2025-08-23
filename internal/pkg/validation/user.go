@@ -59,3 +59,15 @@ func (v *Validator) ValidateGetUserRequest(ctx context.Context, rq *v1.GetUserRe
 func (v *Validator) ValidateListUserRequest(ctx context.Context, rq *v1.ListUserRequest) error {
 	return nil
 }
+
+func (v *Validator) ValidateLoginRequest(ctx context.Context, rq *v1.LoginRequest) error {
+	return nil
+}
+
+func (v *Validator) ValidateRefreshTokenRequest(ctx context.Context, rq *v1.RefreshTokenRequest) error {
+	return nil
+}
+
+func (v *Validator) ValidateChangePasswordRequest(ctx context.Context, rq *v1.ChangePasswordRequest) error {
+	return nil
+}

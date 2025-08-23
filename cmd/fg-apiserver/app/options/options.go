@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"time"
 
 	"github.com/TobyIcetea/fastgo/internal/apiserver"
 	genericoptions "github.com/TobyIcetea/fastgo/pkg/options"
@@ -12,6 +13,10 @@ import (
 type ServerOptions struct {
 	MySQLOptions *genericoptions.MySQLOptions `json:"mysql" mapstructure:"mysql"`
 	Addr         string                       `json:"addr" mapstructure:"addr"`
+	// JWTKey 定义 JWT 密钥
+	JWTKey string `json:"jwt-key" mapstructure:"jwt-key"`
+	// Expiration 定义 JWT Token 的过期时间
+	Expiration time.Duration `json:"expiration" mapstructure:"expiration"`
 }
 
 // NewServerOptions 创建带有默认值的 ServerOptions 实例
@@ -19,6 +24,7 @@ func NewServerOptions() *ServerOptions {
 	return &ServerOptions{
 		MySQLOptions: genericoptions.NewMySQLOptions(),
 		Addr:         "0.0.0.0:6666",
+		Expiration:   time.Hour * 2,
 	}
 }
 
@@ -46,6 +52,11 @@ func (o *ServerOptions) Validate() error {
 		return fmt.Errorf("invalid server port: %s", portStr)
 	}
 
+	// 校验 JWTKey 长度
+	if len(o.JWTKey) < 6 {
+		return fmt.Errorf("JWTKey must be at least 6 characters long")
+	}
+
 	return nil
 }
 
@@ -54,5 +65,7 @@ func (o *ServerOptions) Config() (*apiserver.Config, error) {
 	return &apiserver.Config{
 		MySQLOptions: o.MySQLOptions,
 		Addr:         o.Addr,
+		JWTKey:       o.JWTKey,
+		Expiration:   o.Expiration,
 	}, nil
 }

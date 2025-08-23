@@ -9,8 +9,11 @@ import (
 	"github.com/TobyIcetea/fastgo/internal/apiserver/store"
 	"github.com/TobyIcetea/fastgo/internal/pkg/contextx"
 	"github.com/TobyIcetea/fastgo/internal/pkg/conversion"
+	"github.com/TobyIcetea/fastgo/internal/pkg/errorsx"
 	"github.com/TobyIcetea/fastgo/internal/pkg/known"
 	apiv1 "github.com/TobyIcetea/fastgo/pkg/api/apiserver/v1"
+	"github.com/TobyIcetea/fastgo/pkg/auth"
+	"github.com/TobyIcetea/fastgo/pkg/token"
 	"github.com/jinzhu/copier"
 	"github.com/onexstack/onexstack/pkg/store/where"
 	"golang.org/x/sync/errgroup"
@@ -29,6 +32,9 @@ type UserBiz interface {
 
 // UserExpansion 定义用户操作的扩展方法
 type UserExpansion interface {
+	Login(ctx context.Context, rq *apiv1.LoginRequest) (*apiv1.LoginResponse, error)
+	RefreshToken(ctx context.Context, rq *apiv1.RefreshTokenRequest) (*apiv1.RefreshTokenResponse, error)
+	ChangePassword(ctx context.Context, rq *apiv1.ChangePasswordRequest) (*apiv1.ChangePasswordResponse, error)
 }
 
 // userBiz 是 UserBiz 接口的实现
@@ -41,6 +47,62 @@ var _ UserBiz = (*userBiz)(nil)
 
 func New(store store.IStore) *userBiz {
 	return &userBiz{store: store}
+}
+
+// Login 实现 UserBiz 接口中的 Login 方法
+func (b *userBiz) Login(ctx context.Context, rq *apiv1.LoginRequest) (*apiv1.LoginResponse, error) {
+	// 获取登录用户的所有信息
+	whr := where.F("username", rq.Username)
+	userM, err := b.store.User().Get(ctx, whr)
+	if err != nil {
+		return nil, errorsx.ErrUserNotFound
+	}
+
+	// 对比传入的明文密码和数据库中已加密过的密码是否匹配
+	if err := auth.Compare(userM.Password, rq.Password); err != nil {
+		slog.ErrorContext(ctx, "Failed to compare password", "err", err)
+		return nil, errorsx.ErrPasswordInvalid
+	}
+
+	// 如果匹配成功，说明登录成功，签发 token 并返回
+	tokenStr, expireAt, err := token.Sign(userM.UserID)
+	if err != nil {
+		slog.ErrorContext(ctx, "Failed to sign token", "err", err)
+		return nil, errorsx.ErrSignToken
+	}
+
+	return &apiv1.LoginResponse{Token: tokenStr, ExpireAt: expireAt}, nil
+}
+
+// RefreshToken 用于刷新用户的身份验证令牌
+// 当用户的令牌即将过期时，可以调用此方法生成一个新的令牌
+func (b *userBiz) RefreshToken(ctx context.Context, rq *apiv1.RefreshTokenRequest) (*apiv1.RefreshTokenResponse, error) {
+	// 如果匹配成功，说明登录成功，签发 token 并返回
+	tokenStr, expireAt, err := token.Sign(contextx.UserID(ctx))
+	if err != nil {
+		return nil, errorsx.ErrSignToken.WithMessage(err.Error())
+	}
+	return &apiv1.RefreshTokenResponse{Token: tokenStr, ExpireAt: expireAt}, nil
+}
+
+// ChangePassword 实现 UserBiz 接口中的 ChangePassword 方法
+func (b *userBiz) ChangePassword(ctx context.Context, rq *apiv1.ChangePasswordRequest) (*apiv1.ChangePasswordResponse, error) {
+	userM, err := b.store.User().Get(ctx, where.F("userID", contextx.UserID(ctx)))
+	if err != nil {
+		return nil, err
+	}
+
+	if err := auth.Compare(userM.Password, rq.OldPassword); err != nil {
+		slog.ErrorContext(ctx, "Failed to compare password", "err", err)
+		return nil, errorsx.ErrPasswordInvalid
+	}
+
+	userM.Password, _ = auth.Encrypt(rq.NewPassword)
+	if err := b.store.User().Update(ctx, userM); err != nil {
+		return nil, err
+	}
+
+	return &apiv1.ChangePasswordResponse{}, nil
 }
 
 // Create 实现 UserBiz 接口中的 Create 方法
