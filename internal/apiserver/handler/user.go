@@ -3,6 +3,7 @@ package handler
 import (
 	"log/slog"
 
+	"github.com/TobyIcetea/fastgo/internal/pkg/contextx"
 	v1 "github.com/TobyIcetea/fastgo/pkg/api/apiserver/v1"
 	"github.com/gin-gonic/gin"
 	"github.com/onexstack/onexstack/pkg/core"
@@ -120,7 +121,11 @@ func (h *Handler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.biz.UserV1().Update(c.Request.Context(), &rq)
+	// Extract userID from URL parameters and add it to context
+	userID := c.Param("userID")
+	ctx := contextx.WithUserID(c.Request.Context(), userID)
+
+	resp, err := h.biz.UserV1().Update(ctx, &rq)
 	if err != nil {
 		core.WriteResponse(c, nil, err)
 		return
@@ -134,17 +139,20 @@ func (h *Handler) DeleteUser(c *gin.Context) {
 	slog.Info("Delete user function called")
 
 	var rq v1.DeleteUserRequest
-	if err := c.ShouldBindJSON(&rq); err != nil {
-		core.WriteResponse(c, nil, errorsx.ErrBind)
-		return
-	}
+	// if err := c.ShouldBindJSON(&rq); err != nil {
+	// 	core.WriteResponse(c, nil, errorsx.ErrBind)
+	// 	return
+	// }
 
 	if err := h.val.ValidateDeleteUserRequest(c.Request.Context(), &rq); err != nil {
 		core.WriteResponse(c, nil, errorsx.ErrInvalidArgument.WithMessage(err.Error()))
 		return
 	}
 
-	resp, err := h.biz.UserV1().Delete(c.Request.Context(), &rq)
+	// 给 ctx 中加入参数 userID
+	ctx := contextx.WithUserID(c.Request.Context(), c.Param("userID"))
+
+	resp, err := h.biz.UserV1().Delete(ctx, &rq)
 	if err != nil {
 		core.WriteResponse(c, nil, err)
 		return
@@ -155,20 +163,24 @@ func (h *Handler) DeleteUser(c *gin.Context) {
 
 // GetUser 获取用户信息
 func (h *Handler) GetUser(c *gin.Context) {
-	slog.Info("Get usre function called")
+	slog.Info("Get user function called")
+
+	// Extract userID from URL parameters and add it to context
+	userID := c.Param("userID")
+	ctx := contextx.WithUserID(c.Request.Context(), userID)
 
 	var rq v1.GetUserRequest
-	if err := c.ShouldBindJSON(&rq); err != nil {
-		core.WriteResponse(c, nil, errorsx.ErrBind)
-		return
-	}
+	// if err := c.ShouldBindJSON(&rq); err != nil {
+	// 	core.WriteResponse(c, nil, errorsx.ErrBind)
+	// 	return
+	// }
 
-	if err := h.val.ValidateGetUserRequest(c.Request.Context(), &rq); err != nil {
+	if err := h.val.ValidateGetUserRequest(ctx, &rq); err != nil {
 		core.WriteResponse(c, nil, errorsx.ErrInvalidArgument.WithMessage(err.Error()))
 		return
 	}
 
-	resp, err := h.biz.UserV1().Get(c.Request.Context(), &rq)
+	resp, err := h.biz.UserV1().Get(ctx, &rq)
 	if err != nil {
 		core.WriteResponse(c, nil, err)
 		return

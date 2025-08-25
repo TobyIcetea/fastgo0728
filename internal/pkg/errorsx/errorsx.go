@@ -28,7 +28,7 @@ func New(code int, reason string, format string, args ...any) *ErrorX {
 
 // Error 实现 error 接口中的 Error 方法
 func (err *ErrorX) Error() string {
-	return fmt.Sprintf("err: code = %d, reason = %s, message  %s", err.Code, err.Reason, err.Message)
+	return fmt.Sprintf("err: code = %d, reason = %s, message = %s", err.Code, err.Reason, err.Message)
 }
 
 // WithMessage 设置错误的 Message 字段
